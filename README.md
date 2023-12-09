@@ -1,5 +1,5 @@
-# Advanced_computer_network
-ACN 高等電腦網路 (TCP/IP)
+# Advanced_computer_network (TCP/IP)
+ACN 高等電腦網路 - TCP/IP protocols for Network Layer
 - TCP擁塞控制演算法
 - 有三項主要狀態
   - Slow Start (SS)
