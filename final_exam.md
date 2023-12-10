@@ -1,0 +1,96 @@
+- Conventional wisdom says that bigger packets are better, Reasons ?
+  - 減少一些成本 : network中封包header成本、routers進行路由決策的成本、在hosts進行協議處理和設備中斷的成本
+  - not always true
+------
+- How fast inherent TCP can run is determined by two factors
+  - The size of the TCP window (1.073 Gbytes)
+  - The speed of light
+------
+- Consider the packet size of TCP and UDP
+  - TCP : system因為TCP會由OS幫忙處理·UDP : user因為UDP封包OS並不會做處理，因此必須由user自行處理
+------
+- Why can TCP guarantee reliability?
+  - 每一個TCP segment皆有一個timer，並具有ACK與重傳機制
+  - TCP header存有end-to-end的checksum來驗證其資料正確性
+  - 接收者會discard重複的封包
+  - TCP 可以re-sequencing那些out of order的封包
+  - TCP提供flow control功能
+------
+- How does TCP handle these incoming connection requests while the listening application is busy?
+  - 1. 每一個listening端點皆有一個固定長度的queue，此queue存放曾經被TCP   accept但 尚未被application   accept的connection
+  - 2. Application會限制此queue的長度，通常被稱為backlog，而backlog必須在0到5之間
+  - 3. connection  request到達，TCP會用演算法檢查目前已經被queue在listening  endpoint的connections數量以評估其是否new connection可以被accept
+  - 4.如果listening end point的queue有空間給新的connection，則TCP模組會回應ACK給此connection的SYN並完成連線。若沒有空間，則TCP會忽略接收的SYN
+  - 5.如果listening  server沒有時間處理某些connections(這些connections已經將queue塞滿了)，那麼client的active  open最終會time out
+------
+- Exponential backoff :
+  - 重試某個作業，並以指數增加等候時間，直到達到最大重試計數的技術 
+------
+- Congestion window size(cwnd) increasing or decreasing?
+  - Time out:
+    - cwnd減少，因為這代表網路congestion了，所以需要減少cwnd
+  - Duplicate ACKs:
+    - cwnd增加，因為每收到一個duplicate  ACK代表receiver仍然有在接收封包，所以不需要減少cwnd，應繼續增加
+------
+- Responses of servers respectively for UDP and TCP applications
+  - TCP: 會送回RST(reset  the  connection)flag被設起的ack封包，來拒絕連線
+  - UDP: 會送回ICMP error message
+------
+- 2MSL(TIME_WAIT) Wait State in TCP state transition diagram
+  - 目的：
+    - 1.避免最後回應FIN所發出的ACK  lost，在接收方處於LAST_ACK狀態時，可能會因為超時未收到ACK而重送FIN ACK
+    - 2.避免新連線與舊連線混淆(避免下一個階段的連線，收到這階段連線延遲送到的封包而產生誤判
+  - 原因：
+    - TCP active close那方發出final ACK後必須要等待2MSL的時間，因為ACK可能會遺失
+      所以必須等待2MSL時間來看看是否有重送之FIN，若有則代表ACK遺失，若無則代表連線結束
+------
+- silly window syndrome(SWS)
+  - 傳送端：傳送小量data的segment(而不是等待更多的data到來)，導致header長度比data還長，造成header成本浪費
+  - 接收端：宣告較小的window  size(而不是等到可以宣告大的window size)，導致傳送端發送短data長度的segment 
+------
+- TCP increases the performance of interative traffic transmission, Key ideas :
+  - Nagle Algorithm:
+    - 做為tinygrams的solution，希望沒有outstanding data 才送資料(有收到ack後才送下一筆)
+      讓送資料的速度是跟網路的狀態有所掛勾。但如果有full-size packet要送則不用等ACK，即可直接送
+  - Delayed ACK :
+　　- TCP不一定接收到資料就馬上送出ACK，預期該ACK同一方向上有資料要送出時，才將ACK伴隨此資料一起送出(piggyback)
+      藉由這樣的方法來減少ACK次數 
+------
+- 公式:
+  - capacity = bandwidth * RTT
+  - sequence number為32個bits
+    - data rate * MSL = sequence number總數
+------
+- urgent mode :
+  - 用來告訴另一端有urgent  data被放在正常的date stream中，需要緊急處理
+- urgent pointer :
+  - 指出urgent  data的最後一個byte的sequence number
+------ 
+- TCP flow control
+- TCP control data flow injected into network
+  - cwnd (conjestion window)
+  - rwnd (receiver-advertised window)
+------ 
+- 4 timers maintained by TCP
+  - Persistent timer :
+    - receiver端之window size由0變成非0後，會發送一個新的window size值(window updaste)之ACK給sender端
+      但因為ACK有可能遺失而未被sender端收到，加上ack是unreliable性質的封包，因此若sender端一直沒有傳送封包給receiver
+      receiver並不知道sender是否有收到該ACK，所以需要persist timer破除此deadlock
+  - Retransmission timer
+  - Keepalive timer :
+    - 定義了產生TCP互連後，可以多久不送資料。讓server為了確認client是否存活
+      防止兩個TCP之間出現長時間的空間而占用server資源 
+  - 2MSL timer (Time_Wait timer)
+------
+- TCP擁塞控制演算法
+- 有三項主要狀態
+  - Slow Start (SS)
+    - 每次收到ACK，congestion window都增加一個segment size的大小(receiving ACK => cwnd =cwnd+ 1) 
+  - Congestion Avoidance (CA)
+    - 每一個RTT時間到才將congestion window增加一個segment  size的大小(a RTT => cwnd = cwnd + 1)
+      相當於(receiving ACK => cwnd = cwnd + 1/n, 其中一個RTT有n個Ack)
+      因為cwnd實際上單位為byte，公式轉為receiving ACK => cwnd = cwnd + (MSS^2)/cwnd + MSS/8 (jacobson修正) 
+  - Fast Recovery (FR)
+------ 
+- SS、CA都是TCP必須執行的元素，兩者的差異只在於回應收到ACK時它們增加cwnd大小的方式。
+- 相較於CA，SS會較快速地增加cwnd的大小。FR對於TCP傳送端則是建議性的，而非強制性的。
