@@ -20,8 +20,8 @@
   - 1. 每一個listening端點皆有一個固定長度的queue，此queue存放曾經被TCP   accept但 尚未被application   accept的connection
   - 2. Application會限制此queue的長度，通常被稱為backlog，而backlog必須在0到5之間
   - 3. connection  request到達，TCP會用演算法檢查目前已經被queue在listening  endpoint的connections數量以評估其是否new connection可以被accept
-  - 4.如果listening end point的queue有空間給新的connection，則TCP模組會回應ACK給此connection的SYN並完成連線。若沒有空間，則TCP會忽略接收的SYN
-  - 5.如果listening  server沒有時間處理某些connections(這些connections已經將queue塞滿了)，那麼client的active  open最終會time out
+  - 4. 如果listening end point的queue有空間給新的connection，則TCP模組會回應ACK給此connection的SYN並完成連線。若沒有空間，則TCP會忽略接收的SYN
+  - 5. 如果listening  server沒有時間處理某些connections(這些connections已經將queue塞滿了)，那麼client的active  open最終會time out
 ------
 - Exponential backoff :
   - 重試某個作業，並以指數增加等候時間，直到達到最大重試計數的技術 
